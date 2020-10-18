@@ -3,8 +3,6 @@
 Dense Passage Retrieval (`DPR`) - is a set of tools and models for state-of-the-art open-domain Q&A research.
 It is based on the following paper:
 
-
-
 Vladimir Karpukhin, Barlas Oğuz, Sewon Min, Patrick Lewis, Ledell Wu, Sergey Edunov, Danqi Chen, Wen-tau Yih, [Dense Passage Retrieval for Open-Domain Question Answering](https://arxiv.org/abs/2004.04906), Preprint 2020.
 
 If you find this paper or this code useful, please cite this paper:
@@ -16,6 +14,33 @@ If you find this paper or this code useful, please cite this paper:
   year={2020}
 }
 ```
+
+<!--ts-->
+   * [Dense Passage Retrieval](#dense-passage-retrieval)
+      * [Features](#features)
+      * [Installation](#installation)
+      * [Resources &amp; Data formats](#resources--data-formats)
+      * [Retriever input data format](#retriever-input-data-format)
+      * [Retriever training](#retriever-training)
+      * [Retriever inference](#retriever-inference)
+      * [Retriever validation against the entire set of documents:](#retriever-validation-against-the-entire-set-of-documents)
+      * [Optional reader model input data pre-processing.](#optional-reader-model-input-data-pre-processing)
+      * [Reader model training](#reader-model-training)
+      * [Reader model inference](#reader-model-inference)
+      * [Distributed training](#distributed-training)
+      * [Best hyperparameter settings](#best-hyperparameter-settings)
+         * [1. Download all retriever training and validation data:](#1-download-all-retriever-training-and-validation-data)
+         * [2. Biencoder(Retriever) training in single set mode.](#2-biencoderretriever-training-in-single-set-mode)
+         * [3. Generate embeddings for Wikipedia.](#3-generate-embeddings-for-wikipedia)
+         * [4. Evaluate retrieval accuracy and generate top passage results for each of the train/dev/test datasets.](#4-evaluate-retrieval-accuracy-and-generate-top-passage-results-for-each-of-the-traindevtest-datasets)
+         * [5. Reader training](#5-reader-training)
+      * [Misc.](#misc)
+      * [Reference](#reference)
+      * [License](#license)
+
+<!-- Added by: jose, at: Sun Oct 18 14:55:37 UTC 2020 -->
+
+<!--te-->
 
 ## Features
 1. Dense retriever model is based on bi-encoder architecture.
