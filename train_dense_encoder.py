@@ -63,9 +63,11 @@ logger.addHandler(console)
 
 class BiEncoderTrainer(object):
     """
-    BiEncoder training pipeline component. Can be used to initiate or resume training and validate the trained model
-    using either binary classification's NLL loss or average rank of the question's gold passages across dataset
-    provided pools of negative passages. For full IR accuracy evaluation, please see generate_dense_embeddings.py
+    BiEncoder training pipeline component.
+    Can be used to initiate or resume training and validate the trained model
+    using either binary classification's NLL loss or average rank of the
+    question's gold passages across dataset provided pools of negative passages.
+    For full IR accuracy evaluation, please see generate_dense_embeddings.py
     and dense_retriever.py CLI tools.
     """
 
@@ -254,12 +256,16 @@ class BiEncoderTrainer(object):
 
     def validate_average_rank(self) -> float:
         """
-        Validates biencoder model using each question's gold passage's rank across the set of passages from the dataset.
-        It generates vectors for specified amount of negative passages from each question (see --val_av_rank_xxx params)
-        and stores them in RAM as well as question vectors.
+        Validates biencoder model using each question's gold passage's rank
+        across the set of passages from the dataset.
+        It generates vectors for specified amount of negative passages from each
+        question (see --val_av_rank_xxx params) and stores them in RAM as well
+        as question vectors.
         Then the similarity scores are calculted for the entire
-        num_questions x (num_questions x num_passages_per_question) matrix and sorted per quesrtion.
-        Each question's gold passage rank in that  sorted list of scores is averaged across all the questions.
+        num_questions x (num_questions x num_passages_per_question) matrix
+        and sorted per quesrtion.
+        Each question's gold passage rank in that  sorted list of scores is averaged
+        across all the questions.
         :return: averaged rank number
         """
         logger.info("Average rank validation ...")
@@ -301,7 +307,8 @@ class BiEncoderTrainer(object):
             ctxs_segments = biencoder_input.ctx_segments
             bsz = ctxs_ids.size(0)
 
-            # split contexts batch into sub batches since it is supposed to be too large to be processed in one batch
+            # split contexts batch into sub batches since it is supposed to be too
+            # large to be processed in one batch
             for j, batch_start in enumerate(range(0, bsz, sub_batch_size)):
 
                 q_ids, q_segments = (
@@ -311,8 +318,10 @@ class BiEncoderTrainer(object):
                 )
 
                 if j == 0 and args.n_gpu > 1 and q_ids.size(0) == 1:
-                    # if we are in DP (but not in DDP) mode, all model input tensors should have batch size >1 or 0,
-                    # otherwise the other input tensors will be split but only the first split will be called
+                    # if we are in DP (but not in DDP) mode, all model input tensors
+                    # should have batch size >1 or 0,
+                    # otherwise the other input tensors will be split but only the
+                    # first split will be called
                     continue
 
                 ctx_ids_batch = ctxs_ids[batch_start : batch_start + sub_batch_size]
@@ -368,12 +377,14 @@ class BiEncoderTrainer(object):
 
         rank = 0
         for i, idx in enumerate(positive_idx_per_question):
-            # aggregate the rank of the known gold passage in the sorted results for each question
+            # aggregate the rank of the known gold passage in the sorted results
+            # for each question
             gold_idx = (indices[i] == idx).nonzero()
             rank += gold_idx.item()
 
         if distributed_factor > 1:
-            # each node calcuated its own rank, exchange the information between node and calculate the "global" average rank
+            # each node calcuated its own rank, exchange the information between
+            # node and calculate the "global" average rank
             # NOTE: the set of passages is still unique for every node
             eval_stats = all_gather_list([rank, q_num], max_size=100)
             for i, item in enumerate(eval_stats):
@@ -625,7 +636,7 @@ def _calc_loss(
 
 def _do_biencoder_fwd_pass(
     model: nn.Module, input: BiEncoderBatch, tensorizer: Tensorizer, args
-) -> (torch.Tensor, int):
+) -> Tuple[torch.Tensor, int]:
     input = BiEncoderBatch(**move_to_device(input._asdict(), args.device))
 
     q_attn_mask = tensorizer.get_attn_mask(input.question_ids)
@@ -693,8 +704,10 @@ def main():
         "--global_loss_buf_sz",
         type=int,
         default=150000,
-        help='Buffer size for distributed mode representations al gather operation. \
-                                Increase this if you see errors like "encoded data exceeds max_size ..."',
+        help=(
+            "Buffer size for distributed mode representations al gather operation."
+            'Increase this if you see errors like "encoded data exceeds max_size ..."'
+        ),
     )
 
     parser.add_argument("--fix_ctx_encoder", action="store_true")
@@ -705,7 +718,10 @@ def main():
         "--output_dir",
         default=None,
         type=str,
-        help="The output directory where the model checkpoints will be written or resumed from",
+        help=(
+            "The output directory where the model checkpoints will "
+            "be written or resumed from"
+        ),
     )
 
     # data handling parameters
