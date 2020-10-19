@@ -152,7 +152,7 @@ You can download already generated wikipedia embeddings (trained on NQ dataset) 
 ## Retriever validation against the entire set of documents:
 
 ```bash
-python dense_retriever.py \
+python eval_dense_retriever.py \
 	--model_file ${path to biencoder checkpoint} \
 	--ctx_file  {path to all documents .tsv file} \
 	--qa_file {path to test|dev .csv file} \
@@ -192,7 +192,7 @@ If you don't run this preprocessing, the Reader training pipeline checks if the 
 
 ```bash
 python preprocess_reader_data.py \
-	--retriever_results {path to a file with results from dense_retriever.py} \
+	--retriever_results {path to a file with results from eval_dense_retriever.py} \
 	--gold_passages {path to gold passages info} \
 	--do_lower_case \
 	--pretrained_model_cfg {pretrained_cfg} \
@@ -290,7 +290,7 @@ Just use instructions for "Generating representations for large documents set". 
 ### 4. Evaluate retrieval accuracy and generate top passage results for each of the train/dev/test datasets.
 
 ```bash
-python dense_retriever.py \
+python eval_dense_retriever.py \
 	--model_file {path to checkpoint file from step 1} \
 	--ctx_file {path to psgs_w100.tsv file} \
 	--qa_file {path to test/dev qas file} \

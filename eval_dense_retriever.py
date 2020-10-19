@@ -65,7 +65,7 @@ class DenseRetriever(object):
         self.tensorizer = tensorizer
         self.index = index
 
-    def generate_question_vectors(self, questions: List[str], device='cuda') -> T:
+    def generate_question_vectors(self, questions: List[str], device="cuda") -> T:
         n = len(questions)
         bsz = self.batch_size
         query_vectors = []
@@ -253,26 +253,6 @@ if __name__ == "__main__":
         index = DenseFlatIndexer(vector_size, args.index_buffer)
 
     retriever = DenseRetriever(encoder, args.batch_size, tensorizer, index)
-
-    # Encode test questions
-    questions = [
-        "Are all research code-bases such a mess every single time?",
-        "Why is this not working so easily?"
-    ]
-    questions_tensor = retriever.generate_question_vectors(questions, device='cpu')
-
-    logger.debug(f"question tensor: {questions_tensor.shape}")
-
-    exit()
-
-    # Log the graph to a Tensorboard compatible representation
-    writer = SummaryWriter()
-    writer.add_graph(encoder, input_to_model=[], verbose=True)
-    writer.close()
-
-    # ----------------------------------
-    input("................")
-    exit()
 
     # index all passages
     ctx_files_pattern = args.encoded_ctx_file
