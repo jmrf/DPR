@@ -9,7 +9,7 @@
  Command line tool to get dense results and validate them
 """
 
-import argparse
+
 import os
 import csv
 import glob
@@ -24,17 +24,12 @@ import numpy as np
 import torch
 from torch import Tensor as T
 from torch import nn
+from torch.utils.tensorboard import SummaryWriter
 
+from dpr import setup_logger
 from dpr.data.qa_validation import calculate_matches
 from dpr.models import init_biencoder_components
-from dpr.options import (
-    add_encoder_params,
-    setup_args_gpu,
-    print_args,
-    set_encoder_params_from_state,
-    add_tokenizer_params,
-    add_cuda_params,
-)
+from dpr.options import set_encoder_params_from_state
 from dpr.utils.data_utils import Tensorizer
 from dpr.utils.model_utils import (
     setup_for_distributed_mode,
@@ -47,12 +42,10 @@ from dpr.indexer.faiss_indexers import (
     DenseFlatIndexer,
 )
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-if logger.hasHandlers():
-    logger.handlers.clear()
-console = logging.StreamHandler()
-logger.addHandler(console)
+from cli import get_dense_retriever_args
+
+logger = logging.getLogger(__name__)
+console = None
 
 
 class DenseRetriever(object):
@@ -72,7 +65,7 @@ class DenseRetriever(object):
         self.tensorizer = tensorizer
         self.index = index
 
-    def generate_question_vectors(self, questions: List[str]) -> T:
+    def generate_question_vectors(self, questions: List[str], device='cuda') -> T:
         n = len(questions)
         bsz = self.batch_size
         query_vectors = []
@@ -87,8 +80,8 @@ class DenseRetriever(object):
                     for q in questions[batch_start : batch_start + bsz]
                 ]
 
-                q_ids_batch = torch.stack(batch_token_tensors, dim=0).cuda()
-                q_seg_batch = torch.zeros_like(q_ids_batch).cuda()
+                q_ids_batch = torch.stack(batch_token_tensors, dim=0).to(device)
+                q_seg_batch = torch.zeros_like(q_ids_batch).to(device)
                 q_attn_mask = self.tensorizer.get_attn_mask(q_ids_batch)
                 _, out, _ = self.question_encoder(q_ids_batch, q_seg_batch, q_attn_mask)
 
@@ -217,7 +210,14 @@ def iterate_encoded_files(vector_files: list) -> Iterator[Tuple[object, np.array
                 yield db_id, doc_vector
 
 
-def main(args):
+if __name__ == "__main__":
+
+    args = get_dense_retriever_args()
+
+    console = setup_logger(
+        logger, log_level=logging.DEBUG if args.debug else logging.INFO
+    )
+
     saved_state = load_states_from_checkpoint(args.model_file)
     set_encoder_params_from_state(saved_state.encoder_params, args)
 
@@ -233,8 +233,8 @@ def main(args):
     encoder.eval()
 
     # load weights from the model file
-    model_to_load = get_model_obj(encoder)
     logger.info("Loading saved model state ...")
+    model_to_load = get_model_obj(encoder)
 
     prefix_len = len("question_model.")
     question_encoder_state = {
@@ -243,6 +243,7 @@ def main(args):
         if key.startswith("question_model.")
     }
     model_to_load.load_state_dict(question_encoder_state)
+
     vector_size = model_to_load.get_out_size()
     logger.info("Encoder vector_size=%d", vector_size)
 
@@ -252,6 +253,26 @@ def main(args):
         index = DenseFlatIndexer(vector_size, args.index_buffer)
 
     retriever = DenseRetriever(encoder, args.batch_size, tensorizer, index)
+
+    # Encode test questions
+    questions = [
+        "Are all research code-bases such a mess every single time?",
+        "Why is this not working so easily?"
+    ]
+    questions_tensor = retriever.generate_question_vectors(questions, device='cpu')
+
+    logger.debug(f"question tensor: {questions_tensor.shape}")
+
+    exit()
+
+    # Log the graph to a Tensorboard compatible representation
+    writer = SummaryWriter()
+    writer.add_graph(encoder, input_to_model=[], verbose=True)
+    writer.close()
+
+    # ----------------------------------
+    input("................")
+    exit()
 
     # index all passages
     ctx_files_pattern = args.encoded_ctx_file
@@ -267,6 +288,7 @@ def main(args):
         retriever.index.index_data(input_paths)
         if args.save_or_load_index:
             retriever.index.serialize(index_path)
+
     # get questions & answers
     questions = []
     question_answers = []
@@ -305,84 +327,3 @@ def main(args):
             questions_doc_hits,
             args.out_file,
         )
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-
-    add_encoder_params(parser)
-    add_tokenizer_params(parser)
-    add_cuda_params(parser)
-
-    parser.add_argument(
-        "--qa_file",
-        required=True,
-        type=str,
-        default=None,
-        help="Question and answers file of the format: question \\t ['answer1','answer2', ...]",
-    )
-    parser.add_argument(
-        "--ctx_file",
-        required=True,
-        type=str,
-        default=None,
-        help="All passages file in the tsv format: id \\t passage_text \\t title",
-    )
-    parser.add_argument(
-        "--encoded_ctx_file",
-        type=str,
-        default=None,
-        help="Glob path to encoded passages (from generate_dense_embeddings tool)",
-    )
-    parser.add_argument(
-        "--out_file",
-        type=str,
-        default=None,
-        help="output .json file path to write results to ",
-    )
-    parser.add_argument(
-        "--match",
-        type=str,
-        default="string",
-        choices=["regex", "string"],
-        help="Answer matching logic type",
-    )
-    parser.add_argument(
-        "--n-docs", type=int, default=200, help="Amount of top docs to return"
-    )
-    parser.add_argument(
-        "--validation_workers",
-        type=int,
-        default=16,
-        help="Number of parallel processes to validate results",
-    )
-    parser.add_argument(
-        "--batch_size",
-        type=int,
-        default=32,
-        help="Batch size for question encoder forward pass",
-    )
-    parser.add_argument(
-        "--index_buffer",
-        type=int,
-        default=50000,
-        help="Temporal memory data buffer size (in samples) for indexer",
-    )
-    parser.add_argument(
-        "--hnsw_index",
-        action="store_true",
-        help="If enabled, use inference time efficient HNSW index",
-    )
-    parser.add_argument(
-        "--save_or_load_index", action="store_true", help="If enabled, save index"
-    )
-
-    args = parser.parse_args()
-
-    assert (
-        args.model_file
-    ), "Please specify --model_file checkpoint to init model weights"
-
-    setup_args_gpu(args)
-    print_args(args)
-    main(args)

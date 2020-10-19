@@ -25,13 +25,10 @@ from torch import nn
 
 from dpr.models import init_biencoder_components
 from dpr.options import (
-    add_encoder_params,
-    setup_args_gpu,
     print_args,
     set_encoder_params_from_state,
-    add_tokenizer_params,
-    add_cuda_params,
 )
+from dpr import setup_logger
 from dpr.utils.data_utils import Tensorizer
 from dpr.utils.model_utils import (
     setup_for_distributed_mode,
@@ -39,13 +36,10 @@ from dpr.utils.model_utils import (
     load_states_from_checkpoint,
     move_to_device,
 )
+from cli import get_dense_embedding_args
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-if logger.hasHandlers():
-    logger.handlers.clear()
-console = logging.StreamHandler()
-logger.addHandler(console)
+logger = logging.getLogger(__name__)
+console = None
 
 
 def gen_ctx_vectors(
@@ -92,7 +86,14 @@ def gen_ctx_vectors(
     return results
 
 
-def main(args):
+if __name__ == "__main__":
+
+    args = get_dense_embedding_args()
+
+    console = setup_logger(
+        logger, log_level=logging.DEBUG if args.debug else logging.INFO
+    )
+
     saved_state = load_states_from_checkpoint(args.model_file)
     set_encoder_params_from_state(saved_state.encoder_params, args)
     print_args(args)
@@ -156,46 +157,3 @@ def main(args):
         pickle.dump(data, f)
 
     logger.info("Total passages processed %d. Written to %s", len(data), file)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-
-    add_encoder_params(parser)
-    add_tokenizer_params(parser)
-    add_cuda_params(parser)
-
-    parser.add_argument(
-        "--ctx_file", type=str, default=None, help="Path to passages set .tsv file"
-    )
-    parser.add_argument(
-        "--out_file",
-        required=True,
-        type=str,
-        default=None,
-        help="output file path to write results to",
-    )
-    parser.add_argument(
-        "--shard_id",
-        type=int,
-        default=0,
-        help="Number(0-based) of data shard to process",
-    )
-    parser.add_argument(
-        "--num_shards", type=int, default=1, help="Total amount of data shards"
-    )
-    parser.add_argument(
-        "--batch_size",
-        type=int,
-        default=32,
-        help="Batch size for the passage encoder forward pass",
-    )
-    args = parser.parse_args()
-
-    assert (
-        args.model_file
-    ), "Please specify --model_file checkpoint to init model weights"
-
-    setup_args_gpu(args)
-
-    main(args)

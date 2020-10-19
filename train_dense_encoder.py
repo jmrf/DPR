@@ -53,7 +53,7 @@ from dpr.utils.model_utils import (
     load_states_from_checkpoint,
 )
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 if logger.hasHandlers():
     logger.handlers.clear()

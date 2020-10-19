@@ -20,7 +20,7 @@ from dpr.options import (
     add_tokenizer_params,
 )
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 def main(args):
