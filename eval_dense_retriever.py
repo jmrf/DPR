@@ -4,45 +4,39 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
 """
  Command line tool to get dense results and validate them
 """
-
-
-import os
 import csv
 import glob
-import json
 import gzip
+import json
 import logging
+import os
 import pickle
 import time
-from typing import List, Tuple, Dict, Iterator
+from typing import Dict
+from typing import Iterator
+from typing import List
+from typing import Tuple
 
 import numpy as np
 import torch
-from torch import Tensor as T
 from torch import nn
-from torch.utils.tensorboard import SummaryWriter
+from torch import Tensor as T
 
+from cli import get_dense_retriever_args
 from dpr import setup_logger
 from dpr.data.qa_validation import calculate_matches
+from dpr.indexer.faiss_indexers import DenseFlatIndexer
+from dpr.indexer.faiss_indexers import DenseHNSWFlatIndexer
+from dpr.indexer.faiss_indexers import DenseIndexer
 from dpr.models import init_biencoder_components
 from dpr.options import set_encoder_params_from_state
 from dpr.utils.data_utils import Tensorizer
-from dpr.utils.model_utils import (
-    setup_for_distributed_mode,
-    get_model_obj,
-    load_states_from_checkpoint,
-)
-from dpr.indexer.faiss_indexers import (
-    DenseIndexer,
-    DenseHNSWFlatIndexer,
-    DenseFlatIndexer,
-)
-
-from cli import get_dense_retriever_args
+from dpr.utils.model_utils import get_model_obj
+from dpr.utils.model_utils import load_states_from_checkpoint
+from dpr.utils.model_utils import setup_for_distributed_mode
 
 logger = logging.getLogger(__name__)
 console = None

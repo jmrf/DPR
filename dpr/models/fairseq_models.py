@@ -4,22 +4,20 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
 """
 Encoder model wrappers based on Fairseq code
 """
-
 import logging
 from typing import Tuple
 
 from fairseq.models.roberta.hub_interface import RobertaHubInterface
 from fairseq.models.roberta.model import RobertaModel as FaiseqRobertaModel
 from fairseq.optim.adam import FairseqAdam
-from torch import Tensor as T
 from torch import nn
+from torch import Tensor as T
 
-from dpr.models.hf_models import get_roberta_tensorizer
 from .biencoder import BiEncoder
+from dpr.models.hf_models import get_roberta_tensorizer
 
 logger = logging.getLogger(__name__)
 

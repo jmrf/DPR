@@ -4,12 +4,9 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
-
 """
 Most of the tokenizers code here is copied from DrQA codebase to avoid adding extra dependency
 """
-
 import copy
 import logging
 
@@ -164,7 +161,7 @@ class SimpleTokenizer(Tokenizer):
             annotators: None or empty set (only tokenizes).
         """
         self._regexp = regex.compile(
-            "(%s)|(%s)" % (self.ALPHA_NUM, self.NON_WS),
+            "({})|({})".format(self.ALPHA_NUM, self.NON_WS),
             flags=regex.IGNORECASE + regex.UNICODE + regex.MULTILINE,
         )
         if len(kwargs.get("annotators", {})) > 0:

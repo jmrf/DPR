@@ -4,11 +4,9 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
 """
 Encoder model wrappers based on HuggingFace code
 """
-
 import logging
 from typing import Tuple
 
@@ -17,8 +15,8 @@ from pytext.models.representations.transformer_sentence_encoder import (
     TransformerSentenceEncoder,
 )
 from pytext.optimizer.optimizers import AdamW
-from torch import Tensor as T
 from torch import nn
+from torch import Tensor as T
 
 from .biencoder import BiEncoder
 

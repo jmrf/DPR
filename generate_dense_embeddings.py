@@ -4,39 +4,33 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
 """
  Command line tool that produces embeddings for a large documents base based on
  the pretrained ctx & question encoders.
  Supposed to be used in a 'sharded' way to speed up the process.
 """
-import os
-import pathlib
-
-import argparse
 import csv
 import logging
+import os
+import pathlib
 import pickle
-from typing import List, Tuple
+from typing import List
+from typing import Tuple
 
 import numpy as np
 import torch
 from torch import nn
 
-from dpr.models import init_biencoder_components
-from dpr.options import (
-    print_args,
-    set_encoder_params_from_state,
-)
-from dpr import setup_logger
-from dpr.utils.data_utils import Tensorizer
-from dpr.utils.model_utils import (
-    setup_for_distributed_mode,
-    get_model_obj,
-    load_states_from_checkpoint,
-    move_to_device,
-)
 from cli import get_dense_embedding_args
+from dpr import setup_logger
+from dpr.models import init_biencoder_components
+from dpr.options import print_args
+from dpr.options import set_encoder_params_from_state
+from dpr.utils.data_utils import Tensorizer
+from dpr.utils.model_utils import get_model_obj
+from dpr.utils.model_utils import load_states_from_checkpoint
+from dpr.utils.model_utils import move_to_device
+from dpr.utils.model_utils import setup_for_distributed_mode
 
 logger = logging.getLogger(__name__)
 console = None

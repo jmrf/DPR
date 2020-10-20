@@ -4,11 +4,9 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
 """
 The reader model code + its utilities (loss computation and input batch tensor generator)
 """
-
 import collections
 import logging
 from typing import List
@@ -19,7 +17,8 @@ import torch.nn as nn
 from torch import Tensor as T
 from torch.nn import CrossEntropyLoss
 
-from dpr.data.reader_data import ReaderSample, ReaderPassage
+from dpr.data.reader_data import ReaderPassage
+from dpr.data.reader_data import ReaderSample
 from dpr.utils.model_utils import init_weights
 
 logger = logging.getLogger(__name__)

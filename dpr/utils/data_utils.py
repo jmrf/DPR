@@ -4,17 +4,17 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
 """
 Utilities for general purpose data processing
 """
-
 import json
 import logging
 import math
 import pickle
 import random
-from typing import List, Iterator, Callable
+from typing import Callable
+from typing import Iterator
+from typing import List
 
 from torch import Tensor as T
 
@@ -55,11 +55,13 @@ def read_data_from_json_files(paths: List[str], upsample_rates: List = None) -> 
 
 class ShardedDataIterator(object):
     """
-    General purpose data iterator to be used for Pytorch's DDP mode where every node should handle its own part of
-    the data.
-    Instead of cutting data shards by their min size, it sets the amount of iterations by the maximum shard size.
+    General purpose data iterator to be used for Pytorch's DDP mode where every node
+    should handle its own part of the data.
+    Instead of cutting data shards by their min size, it sets the amount of
+    iterations by the maximum shard size.
     It fills the extra sample by just taking first samples in a shard.
-    It can also optionally enforce identical batch size for all iterations (might be useful for DP mode).
+    It can also optionally enforce identical batch size for all iterations
+    (might be useful for DP mode).
     """
 
     def __init__(
@@ -110,12 +112,13 @@ class ShardedDataIterator(object):
 
     def iterate_data(self, epoch: int = 0) -> Iterator[List]:
         if self.shuffle:
-            # to be able to resume, same shuffling should be used when starting from a failed/stopped iteration
+            # to be able to resume, same shuffling should be used when starting from
+            # a failed/stopped iteration
             epoch_rnd = random.Random(self.shuffle_seed + epoch)
             epoch_rnd.shuffle(self.data)
 
-        # if resuming iteration somewhere in the middle of epoch, one needs to adjust max_iterations
-
+        # if resuming iteration somewhere in the middle of epoch, one needs to
+        # adjust max_iterations
         max_iterations = self.max_iterations - self.iteration
 
         shard_samples = self.data[self.shard_start_idx : self.shard_end_idx]
@@ -129,7 +132,8 @@ class ShardedDataIterator(object):
             self.iteration += 1
             yield items
 
-        # some shards may done iterating while the others are at the last batch. Just return the first batch
+        # some shards may done iterating while the others are at the last batch.
+        # Just return the first batch
         while self.iteration < max_iterations:
             logger.debug("Fulfilling non complete shard=".format(self.shard_id))
             self.iteration += 1
@@ -163,7 +167,8 @@ class Tensorizer(object):
     Component for all text to model input data conversions and related utility methods
     """
 
-    # Note: title, if present, is supposed to be put before text (i.e. optional title + document body)
+    # Note: title, if present, is supposed to be put before text
+    # (i.e. optional title + document body)
     def text_to_tensor(
         self, text: str, title: str = None, add_special_tokens: bool = True
     ):

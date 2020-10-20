@@ -4,16 +4,14 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
 """
  Command line tool to download various preprocessed data sources & checkpoints for DPR
 """
-
+import argparse
 import gzip
 import os
 import pathlib
 
-import argparse
 import wget
 
 NQ_LICENSE_FILES = [

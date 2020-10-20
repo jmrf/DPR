@@ -4,16 +4,16 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
 """
  FAISS-based index components for dense retriver
 """
-
-import os
-import time
 import logging
+import os
 import pickle
-from typing import List, Tuple, Iterator
+import time
+from typing import Iterator
+from typing import List
+from typing import Tuple
 
 import faiss
 import numpy as np

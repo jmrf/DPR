@@ -4,11 +4,9 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
 """
  Set of utilities for the Reader model related data processing tasks
 """
-
 import collections
 import json
 import logging
@@ -16,7 +14,11 @@ import math
 import multiprocessing
 import pickle
 from functools import partial
-from typing import Tuple, List, Dict, Iterable, Optional
+from typing import Dict
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 import torch
 from torch import Tensor as T

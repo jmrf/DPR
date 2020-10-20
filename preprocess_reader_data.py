@@ -4,7 +4,6 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
 """
  Reader data preprocessor command line tool
 """
@@ -13,12 +12,10 @@ import logging
 
 from dpr.data.reader_data import convert_retriever_results
 from dpr.models import init_tensorizer
-from dpr.options import (
-    print_args,
-    add_encoder_params,
-    add_reader_preprocessing_params,
-    add_tokenizer_params,
-)
+from dpr.options import add_encoder_params
+from dpr.options import add_reader_preprocessing_params
+from dpr.options import add_tokenizer_params
+from dpr.options import print_args
 
 logger = logging.getLogger(__name__)
 

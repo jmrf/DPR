@@ -1,34 +1,27 @@
 import logging
 import time
 from typing import List
+from typing import Text
 from typing import Tuple
 
 import numpy as np
 import torch
-from torch import Tensor as T
 from torch import nn
+from torch import Tensor as T
 from torch.utils.tensorboard import SummaryWriter
 
-from typing import List
-from typing import Tuple
-from typing import Text
-
+from cli import get_dense_retriever_args
 from dpr import setup_logger
+from dpr.indexer.faiss_indexers import DenseIndexer
 from dpr.models import init_biencoder_components
 from dpr.options import set_encoder_params_from_state
 from dpr.utils.data_utils import Tensorizer
-from dpr.utils.model_utils import (
-    move_to_device,
-    get_model_obj,
-    load_states_from_checkpoint,
-)
-from dpr.indexer.faiss_indexers import (
-    DenseIndexer,
-    DenseHNSWFlatIndexer,
-    DenseFlatIndexer,
-)
+from dpr.utils.model_utils import get_model_obj
+from dpr.utils.model_utils import load_states_from_checkpoint
+from dpr.utils.model_utils import move_to_device
 
-from cli import get_dense_retriever_args
+# from dpr.indexer.faiss_indexers import DenseFlatIndexer
+# from dpr.indexer.faiss_indexers import DenseHNSWFlatIndexer
 
 logger = logging.getLogger(__name__)
 console = None
@@ -187,11 +180,11 @@ class Retriever(object):
         self, query_vectors: np.array, top_docs: int = 100
     ) -> List[Tuple[List[object], List[float]]]:
         """
-            Does the retrieval of the best matching passages given the query vectors batch
-            :param query_vectors:
-            :param top_docs:
-            :return:
-            """
+        Does the retrieval of the best matching passages given the query vectors batch
+        :param query_vectors:
+        :param top_docs:
+        :return:
+        """
         time0 = time.time()
         results = self.index.search_knn(query_vectors, top_docs)
         logger.info("index search time: %f sec.", time.time() - time0)
@@ -209,9 +202,7 @@ def log_graph_to_tensorboard(model, tensorizer, text_input):
     # Log the graph to a Tensorboard compatible representation
     writer = SummaryWriter()
     writer.add_graph(
-        model,
-        input_to_model=[q_ids_batch, q_seg_batch, q_attn_mask],
-        verbose=False,
+        model, input_to_model=[q_ids_batch, q_seg_batch, q_attn_mask], verbose=False,
     )
     writer.close()
 

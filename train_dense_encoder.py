@@ -4,12 +4,9 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
-
 """
  Pipeline to train DPR Biencoder
 """
-
 import argparse
 import glob
 import logging
@@ -17,41 +14,35 @@ import math
 import os
 import random
 import time
-
+from typing import Tuple
 
 import torch
-
-from typing import Tuple
 from torch import nn
 from torch import Tensor as T
 
 from dpr.models import init_biencoder_components
-from dpr.models.biencoder import BiEncoder, BiEncoderNllLoss, BiEncoderBatch
-from dpr.options import (
-    add_encoder_params,
-    add_training_params,
-    setup_args_gpu,
-    set_seed,
-    print_args,
-    get_encoder_params_state,
-    add_tokenizer_params,
-    set_encoder_params_from_state,
-)
-from dpr.utils.data_utils import (
-    ShardedDataIterator,
-    read_data_from_json_files,
-    Tensorizer,
-)
+from dpr.models.biencoder import BiEncoder
+from dpr.models.biencoder import BiEncoderBatch
+from dpr.models.biencoder import BiEncoderNllLoss
+from dpr.options import add_encoder_params
+from dpr.options import add_tokenizer_params
+from dpr.options import add_training_params
+from dpr.options import get_encoder_params_state
+from dpr.options import print_args
+from dpr.options import set_encoder_params_from_state
+from dpr.options import set_seed
+from dpr.options import setup_args_gpu
+from dpr.utils.data_utils import read_data_from_json_files
+from dpr.utils.data_utils import ShardedDataIterator
+from dpr.utils.data_utils import Tensorizer
 from dpr.utils.dist_utils import all_gather_list
-from dpr.utils.model_utils import (
-    setup_for_distributed_mode,
-    move_to_device,
-    get_schedule_linear,
-    CheckpointState,
-    get_model_file,
-    get_model_obj,
-    load_states_from_checkpoint,
-)
+from dpr.utils.model_utils import CheckpointState
+from dpr.utils.model_utils import get_model_file
+from dpr.utils.model_utils import get_model_obj
+from dpr.utils.model_utils import get_schedule_linear
+from dpr.utils.model_utils import load_states_from_checkpoint
+from dpr.utils.model_utils import move_to_device
+from dpr.utils.model_utils import setup_for_distributed_mode
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

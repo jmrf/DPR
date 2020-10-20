@@ -4,18 +4,18 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
 """
  Set of utilities for Q&A results validation tasks - Retriver passage validation and Reader predicted answer validation
 """
-
 import collections
 import logging
 import string
 import unicodedata
 from functools import partial
 from multiprocessing import Pool as ProcessPool
-from typing import Tuple, List, Dict
+from typing import Dict
+from typing import List
+from typing import Tuple
 
 import regex as re
 

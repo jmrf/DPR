@@ -1,6 +1,6 @@
-import coloredlogs
 import logging
 
+import coloredlogs
 from rich.console import Console
 from rich.traceback import install
 

@@ -4,24 +4,23 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
 """
 BiEncoder component + loss function for 'all-in-batch' training
 """
-
 import collections
 import logging
 import random
-from typing import Tuple, List
+from typing import List
+from typing import Tuple
 
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch import Tensor as T
 from torch import nn
+from torch import Tensor as T
 
-from dpr.utils.data_utils import Tensorizer
 from dpr.utils.data_utils import normalize_question
+from dpr.utils.data_utils import Tensorizer
 
 logger = logging.getLogger(__name__)
 

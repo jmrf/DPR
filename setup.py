@@ -3,8 +3,6 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-
-
 from setuptools import setup
 
 with open("README.md") as f:
@@ -23,7 +21,7 @@ setup(
     ],
     long_description=readme,
     long_description_content_type="text/markdown",
-    setup_requires=["setuptools>=18.0",],
+    setup_requires=["setuptools>=18.0"],
     install_requires=[
         "cython",
         "faiss-cpu>=1.6.1",

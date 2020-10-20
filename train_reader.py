@@ -4,12 +4,9 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
-
 """
  Pipeline to train the reader model on top of the retriever results
 """
-
 import argparse
 import collections
 import glob
@@ -23,39 +20,33 @@ import numpy as np
 import torch
 
 from dpr.data.qa_validation import exact_match_score
-from dpr.data.reader_data import (
-    ReaderSample,
-    get_best_spans,
-    SpanPrediction,
-    convert_retriever_results,
-)
+from dpr.data.reader_data import convert_retriever_results
+from dpr.data.reader_data import get_best_spans
+from dpr.data.reader_data import ReaderSample
+from dpr.data.reader_data import SpanPrediction
 from dpr.models import init_reader_components
-from dpr.models.reader import create_reader_input, ReaderBatch, compute_loss
-from dpr.options import (
-    add_encoder_params,
-    setup_args_gpu,
-    set_seed,
-    add_training_params,
-    add_reader_preprocessing_params,
-    set_encoder_params_from_state,
-    get_encoder_params_state,
-    add_tokenizer_params,
-    print_args,
-)
-from dpr.utils.data_utils import (
-    ShardedDataIterator,
-    read_serialized_data_from_files,
-    Tensorizer,
-)
-from dpr.utils.model_utils import (
-    get_schedule_linear,
-    load_states_from_checkpoint,
-    move_to_device,
-    CheckpointState,
-    get_model_file,
-    setup_for_distributed_mode,
-    get_model_obj,
-)
+from dpr.models.reader import compute_loss
+from dpr.models.reader import create_reader_input
+from dpr.models.reader import ReaderBatch
+from dpr.options import add_encoder_params
+from dpr.options import add_reader_preprocessing_params
+from dpr.options import add_tokenizer_params
+from dpr.options import add_training_params
+from dpr.options import get_encoder_params_state
+from dpr.options import print_args
+from dpr.options import set_encoder_params_from_state
+from dpr.options import set_seed
+from dpr.options import setup_args_gpu
+from dpr.utils.data_utils import read_serialized_data_from_files
+from dpr.utils.data_utils import ShardedDataIterator
+from dpr.utils.data_utils import Tensorizer
+from dpr.utils.model_utils import CheckpointState
+from dpr.utils.model_utils import get_model_file
+from dpr.utils.model_utils import get_model_obj
+from dpr.utils.model_utils import get_schedule_linear
+from dpr.utils.model_utils import load_states_from_checkpoint
+from dpr.utils.model_utils import move_to_device
+from dpr.utils.model_utils import setup_for_distributed_mode
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

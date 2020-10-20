@@ -4,25 +4,24 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
 """
 Encoder model wrappers based on HuggingFace code
 """
-
 import logging
 from typing import Tuple
 
 import torch
-from torch import Tensor as T
 from torch import nn
-from transformers.modeling_bert import BertConfig, BertModel
+from torch import Tensor as T
+from transformers.modeling_bert import BertConfig
+from transformers.modeling_bert import BertModel
 from transformers.optimization import AdamW
 from transformers.tokenization_bert import BertTokenizer
 from transformers.tokenization_roberta import RobertaTokenizer
 
-from dpr.utils.data_utils import Tensorizer
 from .biencoder import BiEncoder
 from .reader import Reader
+from dpr.utils.data_utils import Tensorizer
 
 logger = logging.getLogger(__name__)
 

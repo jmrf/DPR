@@ -1,13 +1,10 @@
 import argparse
 
-from dpr.options import (
-    add_encoder_params,
-    setup_args_gpu,
-    print_args,
-    set_encoder_params_from_state,
-    add_tokenizer_params,
-    add_cuda_params,
-)
+from dpr.options import add_cuda_params
+from dpr.options import add_encoder_params
+from dpr.options import add_tokenizer_params
+from dpr.options import print_args
+from dpr.options import setup_args_gpu
 
 
 def get_dense_embedding_args():
