@@ -35,12 +35,12 @@ class SingleEncoder:
     @classmethod
     def from_biencoder_ckpt(cls, biencoder_ckpt: Text, args) -> None:
 
-        logger.info(f"Loading encoder '{cls.__name__}'")
+        logger.info(f"Loading '{cls.__name__}'")
 
         saved_state = load_states_from_checkpoint(biencoder_ckpt)
         set_encoder_params_from_state(saved_state.encoder_params, args)
 
-        logger.info(f"Pretrained model tensorizer: {args.pretrained_model_cfg}")
+        logger.info(f"Pretrained base-encoder-model: {args.pretrained_model_cfg}")
 
         tensorizer, encoder, _ = init_biencoder_components(
             args.encoder_model_type, args, inference_only=True
