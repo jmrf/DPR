@@ -12,7 +12,7 @@ import argparse
 import logging
 
 from dpr.data.reader_data import convert_retriever_results
-from dpr.models import init_tenzorizer
+from dpr.models import init_tensorizer
 from dpr.options import (
     print_args,
     add_encoder_params,
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def main(args):
-    tensorizer = init_tenzorizer(args.encoder_model_type, args)
+    tensorizer = init_tensorizer(args.encoder_model_type, args)
 
     # disable auto-padding to save disk space of serialized files
     tensorizer.set_pad_to_max(False)

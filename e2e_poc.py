@@ -9,6 +9,10 @@ from torch import Tensor as T
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 
+from typing import List
+from typing import Tuple
+from typing import Text
+
 from dpr import setup_logger
 from dpr.models import init_biencoder_components
 from dpr.options import set_encoder_params_from_state
@@ -30,27 +34,59 @@ console = None
 
 
 class QEncoder(object):
-    def __init__(
-        self, question_encoder: nn.Module, batch_size: int, tensorizer: Tensorizer,
-    ) -> None:
 
+    # TODO: Make explicit all parameters and stop passing around 'args'!!!
+
+    MODEL_PREFIX = "question_model."
+
+    def __init__(self, question_encoder: nn.Module, tensorizer: Tensorizer,) -> None:
         self.question_encoder = question_encoder
-        self.batch_size = batch_size
         self.tensorizer = tensorizer
 
-    def generate_question_vectors(self, questions: List[str], device="cuda") -> T:
+    @classmethod
+    def from_biencoder_ckpt(cls, biencoder_ckpt: Text, args) -> None:
+        saved_state = load_states_from_checkpoint(biencoder_ckpt)
+        set_encoder_params_from_state(saved_state.encoder_params, args)
+
+        logger.info(f"Pretrained model tensorizer: {args.pretrained_model_cfg}")
+
+        tensorizer, encoder, _ = init_biencoder_components(
+            args.encoder_model_type, args, inference_only=True
+        )
+
+        question_encoder = encoder.question_model
+
+        # load weights from the model file
+        logger.info("Loading saved model state ...")
+        model_to_load = get_model_obj(question_encoder)
+
+        prefix_len = len(cls.MODEL_PREFIX)
+        question_encoder_state = {
+            key[prefix_len:]: value
+            for (key, value) in saved_state.model_dict.items()
+            if key.startswith(cls.MODEL_PREFIX)
+        }
+        model_to_load.load_state_dict(question_encoder_state)
+
+        vector_size = model_to_load.get_out_size()
+        logger.info("Encoder vector_size=%d", vector_size)
+
+        return cls(question_encoder, tensorizer)
+
+    def encode(
+        self, questions: List[str], batch_size: int = 32, device="cuda"
+    ) -> T:
         n = len(questions)
-        bsz = self.batch_size
         query_vectors = []
 
         self.question_encoder.eval()
 
         with torch.no_grad():
-            for j, batch_start in enumerate(range(0, n, bsz)):
+            for _, batch_start in enumerate(range(0, n, batch_size)):
 
                 batch_token_tensors = [
                     self.tensorizer.text_to_tensor(q)
-                    for q in questions[batch_start : batch_start + bsz]
+                    for q in questions[batch_start : batch_start + batch_size]
                 ]
 
                 q_ids_batch = torch.stack(batch_token_tensors, dim=0).to(device)
@@ -128,30 +164,7 @@ if __name__ == "__main__":
         logger, log_level=logging.DEBUG if args.debug else logging.INFO
     )
 
-    saved_state = load_states_from_checkpoint(args.model_file)
-    set_encoder_params_from_state(saved_state.encoder_params, args)
-
-    tensorizer, encoder, _ = init_biencoder_components(
-        args.encoder_model_type, args, inference_only=True
-    )
-
-    encoder = encoder.question_model
-    encoder.eval()
-
-    # load weights from the model file
-    logger.info("Loading saved model state ...")
-    model_to_load = get_model_obj(encoder)
-
-    prefix_len = len("question_model.")
-    question_encoder_state = {
-        key[prefix_len:]: value
-        for (key, value) in saved_state.model_dict.items()
-        if key.startswith("question_model.")
-    }
-    model_to_load.load_state_dict(question_encoder_state)
-
-    vector_size = model_to_load.get_out_size()
-    logger.info("Encoder vector_size=%d", vector_size)
+    question_encoder = QEncoder.from_biencoder_ckpt(args.model_file, args)
 
     # Encode test questions
     questions = [
@@ -159,5 +172,7 @@ if __name__ == "__main__":
         "Why is this not working so easily?",
     ]
 
-    questions_tensor = generate_question_vectors(questions, device="cpu")
+    questions_tensor = question_encoder.encode(
+        questions, device="cpu"
+    )
     logger.debug(f"question tensor shape: {questions_tensor.shape}")

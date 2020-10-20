@@ -8,7 +8,7 @@
 import importlib
 
 """
- 'Router'-like set of methods for component initialization with lazy imports 
+ 'Router'-like set of methods for component initialization with lazy imports
 """
 
 
@@ -44,7 +44,7 @@ def init_fairseq_roberta_biencoder(args, **kwargs):
     return get_roberta_biencoder_components(args, **kwargs)
 
 
-def init_hf_bert_tenzorizer(args, **kwargs):
+def init_hf_bert_tensorizer(args, **kwargs):
     if importlib.util.find_spec("transformers") is None:
         raise RuntimeError("Please install transformers lib")
     from .hf_models import get_bert_tensorizer
@@ -71,18 +71,18 @@ READER_INITIALIZERS = {
 }
 
 TENSORIZER_INITIALIZERS = {
-    "hf_bert": init_hf_bert_tenzorizer,
+    "hf_bert": init_hf_bert_tensorizer,
     "hf_roberta": init_hf_roberta_tenzorizer,
-    "pytext_bert": init_hf_bert_tenzorizer,  # using HF's code as of now
+    "pytext_bert": init_hf_bert_tensorizer,  # using HF's code as of now
     "fairseq_roberta": init_hf_roberta_tenzorizer,  # using HF's code as of now
 }
 
 
-def init_comp(initializers_dict, type, args, **kwargs):
-    if type in initializers_dict:
-        return initializers_dict[type](args, **kwargs)
+def init_comp(initializers_dict, model_type, args, **kwargs):
+    if model_type in initializers_dict:
+        return initializers_dict[model_type](args, **kwargs)
     else:
-        raise RuntimeError("unsupported model type: {}".format(type))
+        raise RuntimeError("unsupported model type: {}".format(model_type))
 
 
 def init_biencoder_components(encoder_type: str, args, **kwargs):
@@ -93,5 +93,5 @@ def init_reader_components(encoder_type: str, args, **kwargs):
     return init_comp(READER_INITIALIZERS, encoder_type, args, **kwargs)
 
 
-def init_tenzorizer(encoder_type: str, args, **kwargs):
+def init_tensorizer(encoder_type: str, args, **kwargs):
     return init_comp(TENSORIZER_INITIALIZERS, encoder_type, args, **kwargs)
