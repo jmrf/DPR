@@ -18,6 +18,7 @@ from dpr.models import init_biencoder_components
 from dpr.options import set_encoder_params_from_state
 from dpr.utils.data_utils import Tensorizer
 from dpr.utils.model_utils import (
+    move_to_device,
     get_model_obj,
     load_states_from_checkpoint,
 )
@@ -33,18 +34,16 @@ logger = logging.getLogger(__name__)
 console = None
 
 
-class QEncoder(object):
+# TODO: Make explicit all parameters and stop passing around 'args'
+# TODO:
 
-    # TODO: Make explicit all parameters and stop passing around 'args'!!!
 
-    MODEL_PREFIX = "question_model."
-
-    def __init__(self, question_encoder: nn.Module, tensorizer: Tensorizer,) -> None:
-        self.question_encoder = question_encoder
-        self.tensorizer = tensorizer
-
+class SingleEncoder:
     @classmethod
     def from_biencoder_ckpt(cls, biencoder_ckpt: Text, args) -> None:
+
+        logger.info(f"Loading encoder '{cls.__name__}'")
+
         saved_state = load_states_from_checkpoint(biencoder_ckpt)
         set_encoder_params_from_state(saved_state.encoder_params, args)
 
@@ -54,27 +53,37 @@ class QEncoder(object):
             args.encoder_model_type, args, inference_only=True
         )
 
-        question_encoder = encoder.question_model
+        encoder = getattr(encoder, cls.MODEL_TYPE)
 
         # load weights from the model file
         logger.info("Loading saved model state ...")
-        model_to_load = get_model_obj(question_encoder)
+        model_to_load = get_model_obj(encoder)
 
         prefix_len = len(cls.MODEL_PREFIX)
-        question_encoder_state = {
+        encoder_state = {
             key[prefix_len:]: value
             for (key, value) in saved_state.model_dict.items()
             if key.startswith(cls.MODEL_PREFIX)
         }
-        model_to_load.load_state_dict(question_encoder_state)
+        model_to_load.load_state_dict(encoder_state)
 
         vector_size = model_to_load.get_out_size()
         logger.info("Encoder vector_size=%d", vector_size)
 
-        return cls(question_encoder, tensorizer)
+        return cls(encoder, tensorizer)
+
+
+class QuestionEncoder(SingleEncoder):
+
+    MODEL_TYPE = "question_model"
+    MODEL_PREFIX = "question_model."
+
+    def __init__(self, question_encoder: nn.Module, tensorizer: Tensorizer) -> None:
+        self.question_encoder = question_encoder
+        self.tensorizer = tensorizer
 
     def encode(
-        self, questions: List[str], batch_size: int = 32, device="cuda"
+        self, questions: List[str], batch_size: int = 32, device: Text = "cuda"
     ) -> T:
         n = len(questions)
         query_vectors = []
@@ -107,9 +116,61 @@ class QEncoder(object):
         return query_tensor
 
 
-class ContentEncoder(object):
-    def __init__(self) -> None:
-        pass
+class ContextEncoder(SingleEncoder):
+
+    MODEL_TYPE = "ctx_model"
+    MODEL_PREFIX = "ctx_model."
+
+    def __init__(self, ctx_encoder: nn.Module, tensorizer: Tensorizer,) -> None:
+        self.ctx_encoder = ctx_encoder
+        self.tensorizer = tensorizer
+
+    def gen_ctx_vectors(
+        self,
+        ctx_rows: List[Tuple[object, str, str]],
+        insert_title: bool = True,
+        batch_size: int = 32,
+        device: Text = "cuda",
+    ) -> List[Tuple[object, np.array]]:
+        n = len(ctx_rows)
+        total = 0
+        results = []
+        for _, batch_start in enumerate(range(0, n, batch_size)):
+
+            batch_token_tensors = [
+                self.tensorizer.text_to_tensor(
+                    ctx[1], title=ctx[2] if insert_title else None
+                )
+                for ctx in ctx_rows[batch_start : batch_start + batch_size]
+            ]
+
+            ctx_ids_batch = move_to_device(
+                torch.stack(batch_token_tensors, dim=0), device
+            )
+            ctx_seg_batch = move_to_device(torch.zeros_like(ctx_ids_batch), device)
+            ctx_attn_mask = move_to_device(
+                self.tensorizer.get_attn_mask(ctx_ids_batch), device
+            )
+            with torch.no_grad():
+                _, out, _ = self.ctx_encoder(
+                    ctx_ids_batch, ctx_seg_batch, ctx_attn_mask
+                )
+            out = out.cpu()
+
+            ctx_ids = [r[0] for r in ctx_rows[batch_start : batch_start + batch_size]]
+
+            assert len(ctx_ids) == out.size(0)
+
+            total += len(ctx_ids)
+
+            results.extend(
+                [(ctx_ids[i], out[i].view(-1).numpy()) for i in range(out.size(0))]
+            )
+
+            if total % 10 == 0:
+                logger.info("Encoded passages %d", total)
+
+        return results
 
 
 class Retriever(object):
@@ -137,19 +198,18 @@ class Retriever(object):
         return results
 
 
-def log_graph_to_tensorboard(model, text_input):
+def log_graph_to_tensorboard(model, tensorizer, text_input):
 
-    t = model.tensorizer.text_to_tensor(text_input)
+    t = tensorizer.text_to_tensor(text_input)
 
     q_ids_batch = torch.stack([t], dim=0).to("cpu")
     q_seg_batch = torch.zeros_like(q_ids_batch).to("cpu")
     q_attn_mask = model.tensorizer.get_attn_mask(q_ids_batch)
-    # _, out, _ = model.question_encoder()
 
     # Log the graph to a Tensorboard compatible representation
     writer = SummaryWriter()
     writer.add_graph(
-        model.question_encoder,
+        model,
         input_to_model=[q_ids_batch, q_seg_batch, q_attn_mask],
         verbose=False,
     )
@@ -164,7 +224,8 @@ if __name__ == "__main__":
         logger, log_level=logging.DEBUG if args.debug else logging.INFO
     )
 
-    question_encoder = QEncoder.from_biencoder_ckpt(args.model_file, args)
+    # ******** Question Encoder********
+    question_encoder = QuestionEncoder.from_biencoder_ckpt(args.model_file, args)
 
     # Encode test questions
     questions = [
@@ -172,7 +233,24 @@ if __name__ == "__main__":
         "Why is this not working so easily?",
     ]
 
-    questions_tensor = question_encoder.encode(
-        questions, device="cpu"
-    )
+    questions_tensor = question_encoder.encode(questions, device="cpu")
     logger.debug(f"question tensor shape: {questions_tensor.shape}")
+
+    # ******** Context Encoder********
+    ctx_encoder = ContextEncoder.from_biencoder_ckpt(args.model_file, args)
+
+    # Encode test context passages
+    contexts = [
+        (
+            0,
+            "Usually research code bases are slightly messy in exchange of quick prototyping",
+            "Research coding",
+        ),
+        (1, "To make AI research work good hardware is often required", "Requirements"),
+    ]
+
+    ctx_vectors = ctx_encoder.gen_ctx_vectors(contexts, device="cpu")
+    logger.debug(
+        f"Encoded {len(ctx_vectors)} context vectors "
+        f"of shape: {ctx_vectors[0][1].shape}"
+    )
